@@ -3,8 +3,8 @@
   "version": "1.0.50",
   "scripts": {
     "dev": "bun --watch ./src/index.ts",
-    "build": "bun build ./src/index.ts",
-    "start": "NODE_ENV=production bun src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./public",
+    "start": "NODE_ENV=production bun ./public/index.js",
     "test": "bun test"
   },
   "dependencies": {

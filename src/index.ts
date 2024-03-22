@@ -5,6 +5,8 @@ import { supabase } from "./libs/supabase";
 import { Energy, SupabaseEnergyItem } from "./types";
 import { cors } from "@elysiajs/cors";
 
+const port = process.env.PORT ?? 3000;
+
 async function delay(milliseconds: number) {
   await new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
@@ -101,4 +103,4 @@ const privateRoutes = new Elysia({ prefix: "/api" })
 new Elysia()
   .use(privateRoutes)
   .get("/", () => "Hello world!")
-  .listen(8080);
+  .listen(port);

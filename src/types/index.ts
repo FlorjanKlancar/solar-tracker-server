@@ -29,3 +29,19 @@ export type Energy = {
   energyMade: number;
   energyWasted: number;
 };
+
+export type SyncHistory = {
+  id: string;
+  created_at: string;
+  numberOfInserts: number;
+};
+
+export type MeasuringPoints = {
+  id: string;
+  created_at: string;
+  name: string;
+  pointId: string;
+  pointUUID: string;
+  measuringId: string;
+  apiKey: string;
+};

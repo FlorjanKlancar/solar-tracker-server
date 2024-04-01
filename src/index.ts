@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { clerkPlugin } from "elysia-clerk";
 import { upsertDataInSupabase } from "./libs/syncWithNgenApi";
 import { supabase } from "./libs/supabase";
-import { Energy, SupabaseEnergyItem } from "./types";
+import { Energy, SupabaseEnergyItem, SyncHistory } from "./types";
 import { cors } from "@elysiajs/cors";
 
 const port = process.env.PORT ?? 3000;
@@ -26,32 +26,20 @@ const privateRoutes = new Elysia({ prefix: "/api" })
 
     return { user };
   })
-  .get("/sync", async ({ store, set }) => {
-    if (!store.auth?.userId) {
-      set.status = 403;
-      return "Unauthorized";
+
+  .post("/sync", async ({ set }) => {
+    try {
+      await upsertDataInSupabase();
+
+      set.status = 201;
+      return "Success";
+    } catch (error) {
+      console.error("Error during sync:", error);
+      set.status = 500;
+      return error;
     }
-
-    await upsertDataInSupabase();
-
-    return "Success";
   })
-  .post("/sync", async ({ store, set }) => {
-    if (!store.auth?.userId) {
-      set.status = 403;
-      return "Unauthorized";
-    }
-
-    await delay(10000);
-
-    return "Success";
-  })
-  .get("/energy", async ({ store, set, query }) => {
-    if (!store.auth?.userId) {
-      set.status = 403;
-      return "Unauthorized";
-    }
-
+  .get("/energy", async ({ set, query }) => {
     const { dateFrom, dateTo } = query;
 
     try {
@@ -93,6 +81,25 @@ const privateRoutes = new Elysia({ prefix: "/api" })
         (energyItem) =>
           energyItem.energyMade !== 0 && energyItem.energyWasted !== 0
       );
+    } catch (e) {
+      console.log(e);
+      set.status = 500;
+      return "Server error";
+    }
+  })
+  .get("/sync-history", async ({ set }) => {
+    try {
+      let query = supabase
+        .from("sync-history")
+        .select("*")
+        .order("created_at", { ascending: true })
+        .range(0, 4);
+
+      let { data } = await query;
+
+      const syncHistory = (data as SyncHistory[]) ?? [];
+
+      return syncHistory;
     } catch (e) {
       console.log(e);
       set.status = 500;

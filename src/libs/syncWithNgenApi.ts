@@ -2,6 +2,8 @@ import {
   constructUrlWithParams,
   getLastInsertedDate,
   getMeasuringPoints,
+  getTempAndDaylightDataForDate,
+  getWeatherData,
   insertSyncRow,
 } from ".";
 import { NgenEnergyItem, SupabaseEnergyItem } from "../types";
@@ -80,6 +82,10 @@ export const upsertDataInSupabase = async () => {
       HOME_INFO.apiKey
     );
 
+    const weatherResponse = await getWeatherData(lastInsertedDate);
+
+    if (!weatherResponse) throw new Error("Weather API error");
+
     if (!ngenResponseForGro || !ngenResponseForKobiljek)
       throw new Error("Ngen API error");
 
@@ -96,11 +102,18 @@ export const upsertDataInSupabase = async () => {
         );
       });
 
+      const weatherData = getTempAndDaylightDataForDate(
+        weatherResponse,
+        item.date.split(" ")[0]
+      );
+
       const upsertData = {
         date: item.date,
         energyMade: item.enN,
         energyWasted: item.enP,
         measuringPointId: item.measuring_point_id,
+        daylightDurationInSeconds: weatherData.daylightDurationInSeconds,
+        maximumTemperature: weatherData.maximumTemperature,
         ...(existingData && existingData.id ? { id: existingData.id } : {}),
       };
 
@@ -120,11 +133,18 @@ export const upsertDataInSupabase = async () => {
         );
       });
 
+      const weatherData = getTempAndDaylightDataForDate(
+        weatherResponse,
+        item.date.split(" ")[0]
+      );
+
       const upsertData = {
         date: item.date,
         energyMade: item.enN,
         energyWasted: item.enP,
         measuringPointId: item.measuring_point_id,
+        daylightDurationInSeconds: weatherData.daylightDurationInSeconds,
+        maximumTemperature: weatherData.maximumTemperature,
         ...(existingData && existingData.id ? { id: existingData.id } : {}),
       };
 

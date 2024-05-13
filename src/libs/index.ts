@@ -1,4 +1,8 @@
-import { MeasuringPoints, SupabaseEnergyItem } from "../types";
+import {
+  MeasuringPoints,
+  SupabaseEnergyItem,
+  WeatherApiResponse,
+} from "../types";
 import { supabase } from "./supabase";
 
 export const constructUrlWithParams = (
@@ -62,4 +66,48 @@ export const getMeasuringPoints = async () => {
     console.log(error);
     throw new Error("getMeasuringPoints error");
   }
+};
+
+export const getWeatherData = async (lastInsertedDate: Date) => {
+  try {
+    const today = new Date();
+
+    const latitude = 45.9576254;
+    const longitude = 14.6531854;
+
+    const startDateFormat = lastInsertedDate.toISOString().split("T")[0];
+    const endDateFormat = today.toISOString().split("T")[0];
+
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDateFormat}&end_date=${endDateFormat}&daily=temperature_2m_max,daylight_duration&timezone=Europe%2FBerlin`;
+
+    const response = await fetch(url, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      throw new Error("Network response getWeatherData was not ok");
+    }
+
+    const data: WeatherApiResponse = await response.json();
+
+    return data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const getTempAndDaylightDataForDate = (
+  weatherResponse: WeatherApiResponse,
+  date: string
+) => {
+  const indexOfWeatherDate = weatherResponse.daily.time.findIndex(
+    (time) => time === date
+  );
+
+  return {
+    maximumTemperature:
+      weatherResponse.daily.temperature_2m_max[indexOfWeatherDate],
+    daylightDurationInSeconds:
+      weatherResponse.daily.daylight_duration[indexOfWeatherDate],
+  };
 };

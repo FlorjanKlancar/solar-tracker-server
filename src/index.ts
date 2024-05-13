@@ -101,6 +101,8 @@ const privateRoutes = new Elysia({ prefix: "/api" })
             date: item.date,
             energyMade: item.energyMade,
             energyWasted: item.energyWasted,
+            daylightDurationInSeconds: item.daylightDurationInSeconds,
+            maximumTemperature: item.maximumTemperature,
           });
         }
 

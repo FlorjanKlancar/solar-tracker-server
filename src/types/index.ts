@@ -21,6 +21,8 @@ export type SupabaseEnergyItem = {
   energyMade: number;
   energyWasted: number;
   measuringPointId: number;
+  daylightDurationInSeconds: number;
+  maximumTemperature: number;
 };
 
 export type Energy = {
@@ -28,6 +30,8 @@ export type Energy = {
   date: string;
   energyMade: number;
   energyWasted: number;
+  daylightDurationInSeconds: number;
+  maximumTemperature: number;
 };
 
 export type SyncHistory = {
@@ -44,4 +48,14 @@ export type MeasuringPoints = {
   pointUUID: string;
   measuringId: string;
   apiKey: string;
+};
+
+export type WeatherApiResponse = {
+  latitude: number;
+  longitude: number;
+  daily: {
+    time: string[];
+    daylight_duration: number[];
+    temperature_2m_max: number[];
+  };
 };

@@ -16,7 +16,7 @@ async function delay(milliseconds: number) {
 const privateRoutes = new Elysia({ prefix: "/api" })
   .use(cors())
   .use(clerkPlugin())
-  .get("/user", async ({ clerk, store, set }) => {
+  .get("/auth", async ({ clerk, store, set }) => {
     if (!store.auth?.userId) {
       set.status = 403;
       return "Unauthorized";
@@ -27,16 +27,48 @@ const privateRoutes = new Elysia({ prefix: "/api" })
     return { user };
   })
 
+  .get("/users", async ({ clerk, store, set }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
+    const users = await clerk.users.getUserList();
+
+    const filterUsers = users.filter((user) => user.id !== store.auth?.userId);
+
+    return filterUsers;
+  })
+
+  .post("/users/:userId/disable", async ({ params, clerk, store, set }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
+    const { userId } = params;
+
+    try {
+      await delay(1000);
+
+      return "User disabled successfully";
+    } catch (e) {
+      console.error("Error disabling user:", e);
+      set.status = 500;
+      return e;
+    }
+  })
+
   .post("/sync", async ({ set }) => {
     try {
       await upsertDataInSupabase();
 
       set.status = 201;
       return "Success";
-    } catch (error) {
-      console.error("Error during sync:", error);
+    } catch (e) {
+      console.error("Error during sync:", e);
       set.status = 500;
-      return error;
+      return e;
     }
   })
   .get("/energy", async ({ set, query }) => {
@@ -84,7 +116,7 @@ const privateRoutes = new Elysia({ prefix: "/api" })
     } catch (e) {
       console.log(e);
       set.status = 500;
-      return "Server error";
+      return e;
     }
   })
   .get("/sync-history", async ({ set }) => {
@@ -103,7 +135,7 @@ const privateRoutes = new Elysia({ prefix: "/api" })
     } catch (e) {
       console.log(e);
       set.status = 500;
-      return "Server error";
+      return e;
     }
   });
 

@@ -128,8 +128,6 @@ export const upsertDataInSupabase = async () => {
         ...(existingData && existingData.id ? { id: existingData.id } : {}),
       };
 
-      console.log({ upsertData });
-
       await supabase.from("energy").upsert([upsertData]);
     });
 

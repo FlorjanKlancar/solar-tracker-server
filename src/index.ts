@@ -35,9 +35,7 @@ const privateRoutes = new Elysia({ prefix: "/api" })
 
     const users = await clerk.users.getUserList();
 
-    const filterUsers = users.filter((user) => user.id !== store.auth?.userId);
-
-    return filterUsers;
+    return users;
   })
 
   .post("/users/:userId/disable", async ({ params, clerk, store, set }) => {

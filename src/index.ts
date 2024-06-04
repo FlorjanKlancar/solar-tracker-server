@@ -14,7 +14,7 @@ async function delay(milliseconds: number) {
 }
 
 const privateRoutes = new Elysia({ prefix: "/api" })
-  .use(cors())
+  .use(cors({ methods: "*" }))
   .use(clerkPlugin())
   .get("/auth", async ({ clerk, store, set }) => {
     if (!store.auth?.userId) {
@@ -28,14 +28,60 @@ const privateRoutes = new Elysia({ prefix: "/api" })
   })
 
   .get("/users", async ({ clerk, store, set }) => {
+    const users = await clerk.users.getUserList();
+
+    return users;
+  })
+
+  .post("/users", async ({ store, clerk, body, set }) => {
     if (!store.auth?.userId) {
       set.status = 403;
       return "Unauthorized";
     }
 
-    const users = await clerk.users.getUserList();
+    try {
+      const { firstName, lastName, email, status } = body as {
+        firstName?: string;
+        lastName?: string;
+        email: string;
+        status: "ACTIVE" | "DISABLED";
+      };
 
-    return users;
+      if (!email || !status) {
+        set.status = 400;
+        return "Missing required user parameters.";
+      }
+
+      const payload = {
+        emailAddress: [email],
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
+      };
+
+      const user = await clerk.users.createUser(payload);
+
+      return user;
+    } catch (e) {
+      console.error("Error creating user:", e);
+      set.status = 500;
+      return e;
+    }
+  })
+
+  .post("/users/error", async ({ store, clerk, body, set }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
+    try {
+      await delay(5000);
+      throw new Error("Error");
+    } catch (e) {
+      console.error("Error creating user:", e);
+      set.status = 500;
+      return e;
+    }
   })
 
   .post("/users/:userId/disable", async ({ params, clerk, store, set }) => {
@@ -50,6 +96,30 @@ const privateRoutes = new Elysia({ prefix: "/api" })
       await delay(1000);
 
       return "User disabled successfully";
+    } catch (e) {
+      console.error("Error disabling user:", e);
+      set.status = 500;
+      return e;
+    }
+  })
+
+  .delete("/users/:userId", async ({ params, clerk, store, set }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
+    const { userId } = params;
+
+    if (!userId) {
+      set.status = 400;
+      return "User ID not provided";
+    }
+
+    try {
+      await clerk.users.deleteUser(userId);
+
+      return "User removed successfully";
     } catch (e) {
       console.error("Error disabling user:", e);
       set.status = 500;
@@ -124,8 +194,8 @@ const privateRoutes = new Elysia({ prefix: "/api" })
       let query = supabase
         .from("sync-history")
         .select("*")
-        .order("created_at", { ascending: true })
-        .range(0, 4);
+        .order("created_at", { ascending: false })
+        .limit(5);
 
       let { data } = await query;
 

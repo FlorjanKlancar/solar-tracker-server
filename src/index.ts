@@ -126,7 +126,11 @@ const privateRoutes = new Elysia({ prefix: "/api" })
     }
   })
 
-  .post("/sync", async ({ set }) => {
+  .post("/sync", async ({ store, set }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
     try {
       await upsertDataInSupabase();
 
@@ -138,7 +142,12 @@ const privateRoutes = new Elysia({ prefix: "/api" })
       return e;
     }
   })
-  .get("/energy", async ({ set, query }) => {
+  .get("/energy", async ({ store, set, query }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
     const { page = 1, pageSize = 20 } = query;
     const from = (Number(page) - 1) * Number(pageSize) * 2;
     const to = from + Number(pageSize) * 2 - 1;
@@ -204,7 +213,12 @@ const privateRoutes = new Elysia({ prefix: "/api" })
       return e;
     }
   })
-  .get("/sync-history", async ({ set }) => {
+  .get("/sync-history", async ({ store, set }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
     try {
       let query = supabase
         .from("sync-history")
@@ -223,7 +237,12 @@ const privateRoutes = new Elysia({ prefix: "/api" })
       return e;
     }
   })
-  .get("/energy-statistics", async ({ set, query }) => {
+  .get("/energy-statistics", async ({ store, set, query }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
     const { dateFrom, dateTo } = query;
 
     try {

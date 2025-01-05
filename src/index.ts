@@ -300,6 +300,77 @@ const privateRoutes = new Elysia({ prefix: "/api" })
       set.status = 500;
       return e;
     }
+  })
+  .get("/energy-graph", async ({ store, set, query }) => {
+    if (!store.auth?.userId) {
+      set.status = 403;
+      return "Unauthorized";
+    }
+
+    const { year } = query;
+
+    if (!year) {
+      set.status = 400;
+      return "Year parameter is required";
+    }
+
+    try {
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+
+      let { data } = await supabase
+        .from("energy")
+        .select("*")
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .order("date", { ascending: true });
+
+      const energy = (data as SupabaseEnergyItem[]) ?? [];
+
+      const monthlyData = energy.reduce((acc: Record<string, Energy>, item) => {
+        const month = item.date.substring(0, 7);
+
+        if (!acc[month]) {
+          acc[month] = {
+            date: month,
+            energyMade: 0,
+            energyWasted: 0,
+            daylightDurationInSeconds: 0,
+            maximumTemperature: 0,
+            created_at: item.created_at,
+          };
+        }
+
+        acc[month].energyMade += item.energyMade;
+        acc[month].energyWasted += item.energyWasted;
+        acc[month].daylightDurationInSeconds += item.daylightDurationInSeconds;
+        acc[month].maximumTemperature = Math.max(
+          acc[month].maximumTemperature,
+          item.maximumTemperature
+        );
+
+        return acc;
+      }, {});
+
+      const monthlyArray = Object.values(monthlyData)
+        .filter((item) => item.energyMade !== 0 && item.energyWasted !== 0)
+        .map((item) => ({
+          month: new Date(item.date).toLocaleString("en-US", { month: "long" }),
+          energyMade: item.energyMade,
+          energyWasted: item.energyWasted,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(a.month + " 1").getTime() -
+            new Date(b.month + " 1").getTime()
+        );
+
+      return monthlyArray;
+    } catch (e) {
+      console.log(e);
+      set.status = 500;
+      return e;
+    }
   });
 
 new Elysia()
